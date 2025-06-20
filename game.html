@@ -1,202 +1,247 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>金币点击游戏 V2 - 飘字升级提示</title>
-  <style>
-    body {
-      background: linear-gradient(to bottom right, #f8e6a0, #f7c159);
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 40px 20px;
-      overflow-x: hidden;
-    }
-
-    h1 {
-      font-size: 2.8em;
-      margin-bottom: 10px;
-      color: #444;
-      text-shadow: 1px 1px 2px #fff;
-    }
-
-    #coin {
-      font-size: 100px;
-      cursor: pointer;
-      transition: transform 0.15s ease;
-      user-select: none;
-      display: inline-block;
-      margin-top: 20px;
-    }
-
-    #coin:hover {
-      transform: scale(1.1);
-    }
-
-    #coin:active {
-      transform: scale(1.3) rotate(8deg);
-    }
-
-    .info {
-      font-size: 1.4em;
-      margin: 15px 0;
-      color: #222;
-    }
-
-    button {
-      font-size: 18px;
-      padding: 14px 28px;
-      margin-top: 25px;
-      border: none;
-      border-radius: 14px;
-      background: linear-gradient(to right, #ff9500, #ffb347);
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 6px #c97b00;
-      transition: all 0.15s ease;
-    }
-
-    button:hover {
-      background: linear-gradient(to right, #ffa600, #ffc66d);
-    }
-
-    button:active {
-      transform: translateY(2px);
-      box-shadow: 0 3px #a66700;
-    }
-
-    .float-text {
-      position: absolute;
-      color: gold;
-      font-size: 20px;
-      font-weight: bold;
-      animation: float-up 0.8s ease-out forwards;
-      pointer-events: none;
-      text-shadow: 1px 1px 4px #000;
-      user-select: none;
-    }
-
-    @keyframes float-up {
-      from {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-      to {
-        opacity: 0;
-        transform: translateY(-60px) scale(1.5);
-      }
-    }
-
-    /* 专门给升级成功飘字更大字号和颜色 */
-    .upgrade-text {
-      font-size: 32px !important;
-      color: #4CAF50 !important;
-      text-shadow: 2px 2px 5px #222 !important;
-    }
-
-    footer {
-      margin-top: 40px;
-      font-size: 0.9em;
-      color: #666;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>2D沙盒小游戏原型</title>
+<style>
+  body {
+    background: #88cc88;
+    display: flex; flex-direction: column; align-items: center;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 20px;
+    user-select: none;
+  }
+  h1 {
+    margin-bottom: 5px;
+    color: #264d00;
+  }
+  canvas {
+    background: #aad751;
+    border: 3px solid #4a7023;
+    image-rendering: pixelated;
+    cursor: crosshair;
+  }
+  #inventory {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .slot {
+    width: 40px; height: 40px;
+    border: 2px solid #333;
+    background: #eee;
+    display: flex; justify-content: center; align-items: center;
+    font-weight: bold;
+    font-size: 24px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .slot.selected {
+    border-color: #006600;
+    background: #ccffcc;
+  }
+  #instructions {
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #333;
+    max-width: 500px;
+    text-align: center;
+    line-height: 1.3;
+  }
+</style>
 </head>
 <body>
 
-  <h1>💰 点金币游戏 V2</h1>
-  <div id="coin">🪙</div>
-  <p class="info">金币数量：<span id="count">0</span></p>
-  <p class="info">每次点击获得：<span id="power">1</span> 金币</p>
-  <p class="info">挂机产出：每秒 <span id="auto">0</span> 金币</p>
-  <button id="upgrade">升级威力（10金币）</button>
+<h1>🌿 2D沙盒小游戏原型</h1>
+<canvas id="game" width="640" height="480"></canvas>
+<div id="inventory"></div>
+<div id="instructions">
+  <p><b>操作说明：</b>箭头键移动玩家<br>
+  鼠标左键挖掘方块，右键放置当前背包方块<br>
+  点击背包切换放置的方块<br>
+  游戏会自动保存地图和背包状态</p>
+</div>
 
-  <audio id="clickSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_1096469e1a.mp3"></audio>
-  <audio id="upgradeSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_d2993b1c96.mp3"></audio>
+<script>
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const tileSize = 32;
+  const cols = 20;
+  const rows = 15;
 
-  <footer>本地存档自动保存，离线也能玩！</footer>
+  // 方块类型和颜色映射
+  const BLOCKS = {
+    air: {color: "#88cc88", solid: false, symbol: ""},
+    grass: {color: "#4CAF50", solid: true, symbol: "🟩"},
+    dirt: {color: "#8B4513", solid: true, symbol: "🟫"},
+    stone: {color: "#555555", solid: true, symbol: "⬛"},
+  };
+  const blockTypes = ["grass", "dirt", "stone"];
 
-  <script>
-    // 读取存档
-    let coins = parseInt(localStorage.getItem("coins") || "0");
-    let power = parseInt(localStorage.getItem("power") || "1");
-    let autoRate = parseInt(localStorage.getItem("autoRate") || "0");
+  // 地图二维数组初始化
+  let map = [];
 
-    const coinEl = document.getElementById("coin");
-    const countEl = document.getElementById("count");
-    const powerEl = document.getElementById("power");
-    const autoEl = document.getElementById("auto");
-    const upgradeBtn = document.getElementById("upgrade");
-    const clickSound = document.getElementById("clickSound");
-    const upgradeSound = document.getElementById("upgradeSound");
+  // 玩家坐标
+  let player = {x: 10, y: 7};
 
-    // 更新界面和存档
-    function updateUI() {
-      countEl.textContent = coins;
-      powerEl.textContent = power;
-      autoEl.textContent = autoRate;
-      localStorage.setItem("coins", coins);
-      localStorage.setItem("power", power);
-      localStorage.setItem("autoRate", autoRate);
-      upgradeBtn.textContent = `升级威力（${10 * power}金币）`;
+  // 背包记录方块数量
+  let inventory = {
+    grass: 0,
+    dirt: 0,
+    stone: 0,
+  };
+  let selectedBlock = "grass";
+
+  // 读取存档
+  function loadGame() {
+    const savedMap = localStorage.getItem("sandbox_map");
+    const savedInv = localStorage.getItem("sandbox_inventory");
+    const savedPlayer = localStorage.getItem("sandbox_player");
+    if (savedMap) {
+      map = JSON.parse(savedMap);
+    } else {
+      generateMap();
     }
+    if (savedInv) inventory = JSON.parse(savedInv);
+    if (savedPlayer) player = JSON.parse(savedPlayer);
+  }
 
-    // 漂浮数字
-    function spawnFloatingText(x, y, text, extraClass = "") {
-      const float = document.createElement("div");
-      float.className = "float-text " + extraClass;
-      float.style.left = x + "px";
-      float.style.top = y + "px";
-      float.textContent = text;
-      document.body.appendChild(float);
-      setTimeout(() => float.remove(), 1500);
-    }
+  // 保存存档
+  function saveGame() {
+    localStorage.setItem("sandbox_map", JSON.stringify(map));
+    localStorage.setItem("sandbox_inventory", JSON.stringify(inventory));
+    localStorage.setItem("sandbox_player", JSON.stringify(player));
+  }
 
-    // 页面中央飘字（升级成功用）
-    function showUpgradeText(text) {
-      const float = document.createElement("div");
-      float.className = "float-text upgrade-text";
-      float.style.left = `50%`;
-      float.style.top = `40%`;
-      float.style.transform = "translateX(-50%)";
-      float.textContent = text;
-      document.body.appendChild(float);
-      setTimeout(() => float.remove(), 1500);
-    }
-
-    // 点击金币事件
-    coinEl.addEventListener("click", (e) => {
-      coins += power;
-      clickSound.currentTime = 0;
-      clickSound.play();
-      updateUI();
-      spawnFloatingText(e.pageX, e.pageY, `+${power}`);
-    });
-
-    // 升级点击威力
-    upgradeBtn.addEventListener("click", () => {
-      const cost = 10 * power;
-      if (coins >= cost) {
-        coins -= cost;
-        power += 1;
-        if (power % 5 === 0) autoRate += 1; // 每5级解锁挂机产出
-        upgradeSound.play();
-        updateUI();
-        showUpgradeText(`升级成功！点击 +${power}`);
-      } else {
-        alert("金币不足！");
+  // 随机地图生成（简易版）
+  function generateMap() {
+    map = [];
+    for(let y=0; y<rows; y++) {
+      let row = [];
+      for(let x=0; x<cols; x++) {
+        if (y > 10) {
+          // 地底多石头和泥土
+          let rand = Math.random();
+          if(rand < 0.6) row.push("dirt");
+          else if(rand < 0.9) row.push("stone");
+          else row.push("grass");
+        } else if (y === 10) {
+          row.push("grass");
+        } else {
+          row.push("air");
+        }
       }
-    });
+      map.push(row);
+    }
+  }
 
-    // 挂机金币产出
-    setInterval(() => {
-      if (autoRate > 0) {
-        coins += autoRate;
-        updateUI();
+  // 绘制地图和玩家
+  function draw() {
+    for(let y=0; y<rows; y++) {
+      for(let x=0; x<cols; x++) {
+        let b = map[y][x];
+        ctx.fillStyle = BLOCKS[b].color;
+        ctx.fillRect(x*tileSize, y*tileSize, tileSize, tileSize);
+        // 方块边框
+        if(b !== "air") {
+          ctx.strokeStyle = "#3a3a3a";
+          ctx.strokeRect(x*tileSize, y*tileSize, tileSize, tileSize);
+        }
       }
-    }, 1000);
+    }
+    // 画玩家（简单绿色方块带眼睛）
+    const px = player.x * tileSize;
+    const py = player.y * tileSize;
+    ctx.fillStyle = "#007700";
+    ctx.fillRect(px, py, tileSize, tileSize);
+    // 眼睛
+    ctx.fillStyle = "#ccffcc";
+    ctx.fillRect(px+8, py+8, 6, 6);
+    ctx.fillRect(px+18, py+8, 6, 6);
+  }
 
-    updateUI();
-  </script>
+  // 背包UI刷新
+  const invEl = document.getElementById("inventory");
+  function refreshInventory() {
+    invEl.innerHTML = "";
+    for(let block in inventory) {
+      const slot = document.createElement("div");
+      slot.className = "slot";
+      if(block === selectedBlock) slot.classList.add("selected");
+      slot.textContent = BLOCKS[block].symbol + (inventory[block] > 0 ? inventory[block] : "");
+      slot.title = `${block} (${inventory[block]})`;
+      slot.onclick = () => {
+        selectedBlock = block;
+        refreshInventory();
+      };
+      invEl.appendChild(slot);
+    }
+  }
+
+  // 判断玩家新位置是否合法（不能撞墙）
+  function canMoveTo(x, y) {
+    if(x < 0 || x >= cols || y < 0 || y >= rows) return false;
+    return !BLOCKS[map[y][x]].solid;
+  }
+
+  // 玩家移动处理
+  window.addEventListener("keydown", e => {
+    let nx = player.x;
+    let ny = player.y;
+    if(e.key === "ArrowUp") ny--;
+    else if(e.key === "ArrowDown") ny++;
+    else if(e.key === "ArrowLeft") nx--;
+    else if(e.key === "ArrowRight") nx++;
+
+    if(canMoveTo(nx, ny)) {
+      player.x = nx;
+      player.y = ny;
+      saveGame();
+      draw();
+    }
+  });
+
+  // 鼠标点击处理（挖掘和放置）
+  canvas.addEventListener("mousedown", e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const cx = Math.floor((e.clientX - rect.left) / tileSize);
+    const cy = Math.floor((e.clientY - rect.top) / tileSize);
+    if(cx < 0 || cx >= cols || cy < 0 || cy >= rows) return;
+
+    if(e.button === 0) { // 左键 挖掘
+      if(map[cy][cx] !== "air" && !(
+        player.x === cx && player.y === cy //不能挖自己站的格子
+      )) {
+        let blockType = map[cy][cx];
+        map[cy][cx] = "air";
+        inventory[blockType]++;
+        saveGame();
+        refreshInventory();
+        draw();
+      }
+    } else if(e.button === 2) { // 右键 放置
+      if(map[cy][cx] === "air" && inventory[selectedBlock] > 0) {
+        map[cy][cx] = selectedBlock;
+        inventory[selectedBlock]--;
+        saveGame();
+        refreshInventory();
+        draw();
+      }
+    }
+  });
+
+  // 禁用画布默认右键菜单
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+  // 初始化游戏
+  loadGame();
+  refreshInventory();
+  draw();
+
+})();
+</script>
+
 </body>
 </html>
