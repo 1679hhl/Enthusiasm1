@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>金币点击游戏 V2</title>
+  <meta charset="UTF-8" />
+  <title>金币点击游戏 V2 - 飘字升级提示</title>
   <style>
     body {
       background: linear-gradient(to bottom right, #f8e6a0, #f7c159);
@@ -74,6 +74,7 @@
       animation: float-up 0.8s ease-out forwards;
       pointer-events: none;
       text-shadow: 1px 1px 4px #000;
+      user-select: none;
     }
 
     @keyframes float-up {
@@ -85,6 +86,13 @@
         opacity: 0;
         transform: translateY(-60px) scale(1.5);
       }
+    }
+
+    /* 专门给升级成功飘字更大字号和颜色 */
+    .upgrade-text {
+      font-size: 32px !important;
+      color: #4CAF50 !important;
+      text-shadow: 2px 2px 5px #222 !important;
     }
 
     footer {
@@ -133,6 +141,29 @@
       upgradeBtn.textContent = `升级威力（${10 * power}金币）`;
     }
 
+    // 漂浮数字
+    function spawnFloatingText(x, y, text, extraClass = "") {
+      const float = document.createElement("div");
+      float.className = "float-text " + extraClass;
+      float.style.left = x + "px";
+      float.style.top = y + "px";
+      float.textContent = text;
+      document.body.appendChild(float);
+      setTimeout(() => float.remove(), 1500);
+    }
+
+    // 页面中央飘字（升级成功用）
+    function showUpgradeText(text) {
+      const float = document.createElement("div");
+      float.className = "float-text upgrade-text";
+      float.style.left = `50%`;
+      float.style.top = `40%`;
+      float.style.transform = "translateX(-50%)";
+      float.textContent = text;
+      document.body.appendChild(float);
+      setTimeout(() => float.remove(), 1500);
+    }
+
     // 点击金币事件
     coinEl.addEventListener("click", (e) => {
       coins += power;
@@ -148,25 +179,14 @@
       if (coins >= cost) {
         coins -= cost;
         power += 1;
-        if (power % 5 === 0) autoRate += 1; // 每5级解锁挂机
+        if (power % 5 === 0) autoRate += 1; // 每5级解锁挂机产出
         upgradeSound.play();
         updateUI();
-        alert(`升级成功！现在每次点击获得 ${power} 金币`);
+        showUpgradeText(`升级成功！点击 +${power}`);
       } else {
         alert("金币不足！");
       }
     });
-
-    // 漂浮数字
-    function spawnFloatingText(x, y, text) {
-      const float = document.createElement("div");
-      float.className = "float-text";
-      float.style.left = x + "px";
-      float.style.top = y + "px";
-      float.textContent = text;
-      document.body.appendChild(float);
-      setTimeout(() => float.remove(), 800);
-    }
 
     // 挂机金币产出
     setInterval(() => {
