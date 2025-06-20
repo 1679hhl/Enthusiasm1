@@ -2,10 +2,10 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>物理沙盒小游戏</title>
+  <title>生动沙盒小游戏</title>
   <style>
     body {
-      margin: 0; background: #333; display: flex; flex-direction: column; align-items: center; color: #fff;
+      margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; color: #fff;
       font-family: sans-serif;
     }
     canvas {
@@ -17,9 +17,9 @@
   </style>
 </head>
 <body>
-  <h1>🌍 沙盒游戏 + 物理系统</h1>
+  <h1>🌍 沙盒物理游戏</h1>
   <canvas id="game" width="640" height="480"></canvas>
-  <div id="tip">←↑→↓控制玩家，点击放置/挖掘，支持沙子掉落 + 水流动 + 玩家重力</div>
+  <div id="tip">←↑→↓移动 | 鼠标点击互动 | 沙子/水/重力 | 每秒固定更新物理</div>
 
   <script>
     const canvas = document.getElementById("game");
@@ -130,17 +130,19 @@
       const y = Math.floor((e.clientY - rect.top) / TILE_SIZE);
       if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
       if (e.button === 0) {
-        // 挖掘
         map[y][x] = "air";
       } else if (e.button === 2) {
-        // 放置
         map[y][x] = ["dirt", "stone", "sand", "water"][Math.floor(Math.random() * 4)];
       }
     });
     canvas.oncontextmenu = e => e.preventDefault();
 
-    function gameLoop() {
+    // 固定帧率更新物理逻辑
+    setInterval(() => {
       updatePhysics();
+    }, 1000 / 15); // 每秒15次物理更新
+
+    function gameLoop() {
       drawMap();
       requestAnimationFrame(gameLoop);
     }
@@ -148,4 +150,3 @@
   </script>
 </body>
 </html>
-
