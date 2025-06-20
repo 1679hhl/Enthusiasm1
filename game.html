@@ -19,7 +19,7 @@
 <body>
   <h1>🌍 沙盒物理游戏</h1>
   <canvas id="game" width="640" height="480"></canvas>
-  <div id="tip">←↑→↓移动 | 鼠标点击互动 | 沙子/水/重力 | 每秒固定更新物理</div>
+  <div id="tip">←↑→↓移动 | 鼠标点击互动 | 沙子/水/重力/动物 | 每秒固定更新物理</div>
 
   <script>
     const canvas = document.getElementById("game");
@@ -34,15 +34,18 @@
       dirt:  { color: "#8B4513", solid: true, gravity: false, fluid: false },
       stone: { color: "#555", solid: true, gravity: false, fluid: false },
       sand:  { color: "#f4d03f", solid: true, gravity: true, fluid: false },
-      water: { color: "#4fc3f7", solid: false, gravity: false, fluid: true }
+      water: { color: "#4fc3f7", solid: false, gravity: false, fluid: true },
+      lava:  { color: "#ff5722", solid: false, gravity: false, fluid: true },
+      grass: { color: "#00aa00", solid: true, gravity: false, fluid: false },
+      ice:   { color: "#a0e8f0", solid: true, gravity: false, fluid: false }
     };
 
     const map = Array.from({ length: ROWS }, (_, y) =>
-      Array.from({ length: COLS }, (_, x) => (y > 11 ? "dirt" : y === 12 ? "sand" : "air"))
+      Array.from({ length: COLS }, (_, x) => (y > 11 ? "dirt" : y === 11 ? "grass" : "air"))
     );
 
     let player = { x: 5, y: 5, vy: 0 };
-
+    let animals = [{ x: 10, y: 10, type: "🐑", dir: 1 }];
     let particles = [];
 
     function addParticles(x, y, color) {
@@ -87,6 +90,13 @@
       ctx.fillRect(player.x * TILE_SIZE + 18, player.y * TILE_SIZE + 8, 6, 6);
     }
 
+    function drawAnimals() {
+      for (const a of animals) {
+        ctx.font = "24px sans-serif";
+        ctx.fillText(a.type, a.x * TILE_SIZE + 4, a.y * TILE_SIZE + 28);
+      }
+    }
+
     function drawMap() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (let y = 0; y < ROWS; y++) {
@@ -95,6 +105,7 @@
         }
       }
       drawPlayer();
+      drawAnimals();
       drawParticles();
     }
 
@@ -122,12 +133,18 @@
             }
             if (options.length) {
               const [nx, ny] = options[Math.floor(Math.random() * options.length)];
-              map[ny][nx] = "water";
+              map[ny][nx] = block;
               map[y][x] = "air";
               addParticles(x, y, BLOCKS[block].color);
             }
           }
         }
+      }
+
+      for (const a of animals) {
+        let nx = a.x + a.dir;
+        if (nx < 0 || nx >= COLS || BLOCKS[map[a.y][nx]].solid) a.dir *= -1;
+        else a.x += a.dir;
       }
 
       if (player.y + 1 < ROWS && !BLOCKS[map[player.y + 1][player.x]].solid) {
@@ -167,7 +184,7 @@
         map[y][x] = "air";
         addParticles(x, y, "#ffffff");
       } else if (e.button === 2) {
-        const block = ["dirt", "stone", "sand", "water"][Math.floor(Math.random() * 4)];
+        const block = ["dirt", "stone", "sand", "water", "lava", "ice"][Math.floor(Math.random() * 6)];
         map[y][x] = block;
         addParticles(x, y, BLOCKS[block].color);
       }
