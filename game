@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>单机点击游戏</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; padding: 2em; }
+    #coin { font-size: 40px; cursor: pointer; margin: 20px; }
+    button { font-size: 16px; padding: 10px 20px; margin: 10px; }
+  </style>
+</head>
+<body>
+  <h1>点金币游戏</h1>
+  <div id="coin">🪙</div>
+  <p>金币数量：<span id="count">0</span></p>
+  <button id="upgrade">升级（成本：10金币）</button>
+
+  <script>
+    let coins = parseInt(localStorage.getItem("coins") || "0");
+    let power = parseInt(localStorage.getItem("power") || "1");
+
+    const countEl = document.getElementById("count");
+    const coinEl = document.getElementById("coin");
+    const upgradeBtn = document.getElementById("upgrade");
+
+    function updateUI() {
+      countEl.textContent = coins;
+      localStorage.setItem("coins", coins);
+      localStorage.setItem("power", power);
+    }
+
+    coinEl.onclick = () => {
+      coins += power;
+      updateUI();
+    };
+
+    upgradeBtn.onclick = () => {
+      if (coins >= 10) {
+        coins -= 10;
+        power += 1;
+        updateUI();
+        alert("升级成功！现在每次点击获得 " + power + " 金币");
+      } else {
+        alert("金币不足！");
+      }
+    };
+
+    updateUI();
+  </script>
+</body>
+</html>
