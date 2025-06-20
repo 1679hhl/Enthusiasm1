@@ -1,247 +1,150 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8" />
-<title>2D沙盒小游戏原型</title>
-<style>
-  body {
-    background: #88cc88;
-    display: flex; flex-direction: column; align-items: center;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0; padding: 20px;
-    user-select: none;
-  }
-  h1 {
-    margin-bottom: 5px;
-    color: #264d00;
-  }
-  canvas {
-    background: #aad751;
-    border: 3px solid #4a7023;
-    image-rendering: pixelated;
-    cursor: crosshair;
-  }
-  #inventory {
-    margin-top: 10px;
-    display: flex;
-    gap: 8px;
-  }
-  .slot {
-    width: 40px; height: 40px;
-    border: 2px solid #333;
-    background: #eee;
-    display: flex; justify-content: center; align-items: center;
-    font-weight: bold;
-    font-size: 24px;
-    cursor: pointer;
-    user-select: none;
-  }
-  .slot.selected {
-    border-color: #006600;
-    background: #ccffcc;
-  }
-  #instructions {
-    margin-top: 15px;
-    font-size: 0.9em;
-    color: #333;
-    max-width: 500px;
-    text-align: center;
-    line-height: 1.3;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>物理沙盒小游戏</title>
+  <style>
+    body {
+      margin: 0; background: #333; display: flex; flex-direction: column; align-items: center; color: #fff;
+      font-family: sans-serif;
+    }
+    canvas {
+      border: 2px solid #fff;
+      image-rendering: pixelated;
+      background: #88cc88;
+    }
+    #tip { margin: 10px; font-size: 0.9em; text-align: center; }
+  </style>
 </head>
 <body>
+  <h1>🌍 沙盒游戏 + 物理系统</h1>
+  <canvas id="game" width="640" height="480"></canvas>
+  <div id="tip">←↑→↓控制玩家，点击放置/挖掘，支持沙子掉落 + 水流动 + 玩家重力</div>
 
-<h1>🌿 2D沙盒小游戏原型</h1>
-<canvas id="game" width="640" height="480"></canvas>
-<div id="inventory"></div>
-<div id="instructions">
-  <p><b>操作说明：</b>箭头键移动玩家<br>
-  鼠标左键挖掘方块，右键放置当前背包方块<br>
-  点击背包切换放置的方块<br>
-  游戏会自动保存地图和背包状态</p>
-</div>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
 
-<script>
-(() => {
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
-  const tileSize = 32;
-  const cols = 20;
-  const rows = 15;
+    const TILE_SIZE = 32;
+    const ROWS = 15;
+    const COLS = 20;
 
-  // 方块类型和颜色映射
-  const BLOCKS = {
-    air: {color: "#88cc88", solid: false, symbol: ""},
-    grass: {color: "#4CAF50", solid: true, symbol: "🟩"},
-    dirt: {color: "#8B4513", solid: true, symbol: "🟫"},
-    stone: {color: "#555555", solid: true, symbol: "⬛"},
-  };
-  const blockTypes = ["grass", "dirt", "stone"];
+    const BLOCKS = {
+      air:   { color: "#88cc88", solid: false, gravity: false, fluid: false },
+      dirt:  { color: "#8B4513", solid: true, gravity: false, fluid: false },
+      stone: { color: "#555", solid: true, gravity: false, fluid: false },
+      sand:  { color: "#f4d03f", solid: true, gravity: true, fluid: false },
+      water: { color: "#4fc3f7", solid: false, gravity: false, fluid: true }
+    };
 
-  // 地图二维数组初始化
-  let map = [];
+    const map = Array.from({ length: ROWS }, (_, y) =>
+      Array.from({ length: COLS }, (_, x) => (y > 11 ? "dirt" : y === 12 ? "sand" : "air"))
+    );
 
-  // 玩家坐标
-  let player = {x: 10, y: 7};
+    let player = { x: 5, y: 5, vy: 0 };
 
-  // 背包记录方块数量
-  let inventory = {
-    grass: 0,
-    dirt: 0,
-    stone: 0,
-  };
-  let selectedBlock = "grass";
-
-  // 读取存档
-  function loadGame() {
-    const savedMap = localStorage.getItem("sandbox_map");
-    const savedInv = localStorage.getItem("sandbox_inventory");
-    const savedPlayer = localStorage.getItem("sandbox_player");
-    if (savedMap) {
-      map = JSON.parse(savedMap);
-    } else {
-      generateMap();
+    function drawTile(x, y, type) {
+      ctx.fillStyle = BLOCKS[type].color;
+      ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
-    if (savedInv) inventory = JSON.parse(savedInv);
-    if (savedPlayer) player = JSON.parse(savedPlayer);
-  }
 
-  // 保存存档
-  function saveGame() {
-    localStorage.setItem("sandbox_map", JSON.stringify(map));
-    localStorage.setItem("sandbox_inventory", JSON.stringify(inventory));
-    localStorage.setItem("sandbox_player", JSON.stringify(player));
-  }
+    function drawPlayer() {
+      ctx.fillStyle = "#007700";
+      ctx.fillRect(player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      ctx.fillStyle = "#ccffcc";
+      ctx.fillRect(player.x * TILE_SIZE + 8, player.y * TILE_SIZE + 8, 6, 6);
+      ctx.fillRect(player.x * TILE_SIZE + 18, player.y * TILE_SIZE + 8, 6, 6);
+    }
 
-  // 随机地图生成（简易版）
-  function generateMap() {
-    map = [];
-    for(let y=0; y<rows; y++) {
-      let row = [];
-      for(let x=0; x<cols; x++) {
-        if (y > 10) {
-          // 地底多石头和泥土
-          let rand = Math.random();
-          if(rand < 0.6) row.push("dirt");
-          else if(rand < 0.9) row.push("stone");
-          else row.push("grass");
-        } else if (y === 10) {
-          row.push("grass");
-        } else {
-          row.push("air");
+    function drawMap() {
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          drawTile(x, y, map[y][x]);
         }
       }
-      map.push(row);
+      drawPlayer();
     }
-  }
 
-  // 绘制地图和玩家
-  function draw() {
-    for(let y=0; y<rows; y++) {
-      for(let x=0; x<cols; x++) {
-        let b = map[y][x];
-        ctx.fillStyle = BLOCKS[b].color;
-        ctx.fillRect(x*tileSize, y*tileSize, tileSize, tileSize);
-        // 方块边框
-        if(b !== "air") {
-          ctx.strokeStyle = "#3a3a3a";
-          ctx.strokeRect(x*tileSize, y*tileSize, tileSize, tileSize);
+    function updatePhysics() {
+      // Sand gravity
+      for (let y = ROWS - 2; y >= 0; y--) {
+        for (let x = 0; x < COLS; x++) {
+          const block = map[y][x];
+          if (BLOCKS[block].gravity && map[y + 1][x] === "air") {
+            map[y + 1][x] = block;
+            map[y][x] = "air";
+          }
         }
       }
-    }
-    // 画玩家（简单绿色方块带眼睛）
-    const px = player.x * tileSize;
-    const py = player.y * tileSize;
-    ctx.fillStyle = "#007700";
-    ctx.fillRect(px, py, tileSize, tileSize);
-    // 眼睛
-    ctx.fillStyle = "#ccffcc";
-    ctx.fillRect(px+8, py+8, 6, 6);
-    ctx.fillRect(px+18, py+8, 6, 6);
-  }
 
-  // 背包UI刷新
-  const invEl = document.getElementById("inventory");
-  function refreshInventory() {
-    invEl.innerHTML = "";
-    for(let block in inventory) {
-      const slot = document.createElement("div");
-      slot.className = "slot";
-      if(block === selectedBlock) slot.classList.add("selected");
-      slot.textContent = BLOCKS[block].symbol + (inventory[block] > 0 ? inventory[block] : "");
-      slot.title = `${block} (${inventory[block]})`;
-      slot.onclick = () => {
-        selectedBlock = block;
-        refreshInventory();
-      };
-      invEl.appendChild(slot);
-    }
-  }
-
-  // 判断玩家新位置是否合法（不能撞墙）
-  function canMoveTo(x, y) {
-    if(x < 0 || x >= cols || y < 0 || y >= rows) return false;
-    return !BLOCKS[map[y][x]].solid;
-  }
-
-  // 玩家移动处理
-  window.addEventListener("keydown", e => {
-    let nx = player.x;
-    let ny = player.y;
-    if(e.key === "ArrowUp") ny--;
-    else if(e.key === "ArrowDown") ny++;
-    else if(e.key === "ArrowLeft") nx--;
-    else if(e.key === "ArrowRight") nx++;
-
-    if(canMoveTo(nx, ny)) {
-      player.x = nx;
-      player.y = ny;
-      saveGame();
-      draw();
-    }
-  });
-
-  // 鼠标点击处理（挖掘和放置）
-  canvas.addEventListener("mousedown", e => {
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const cx = Math.floor((e.clientX - rect.left) / tileSize);
-    const cy = Math.floor((e.clientY - rect.top) / tileSize);
-    if(cx < 0 || cx >= cols || cy < 0 || cy >= rows) return;
-
-    if(e.button === 0) { // 左键 挖掘
-      if(map[cy][cx] !== "air" && !(
-        player.x === cx && player.y === cy //不能挖自己站的格子
-      )) {
-        let blockType = map[cy][cx];
-        map[cy][cx] = "air";
-        inventory[blockType]++;
-        saveGame();
-        refreshInventory();
-        draw();
+      // Fluid spread (water)
+      for (let y = ROWS - 1; y >= 0; y--) {
+        for (let x = 0; x < COLS; x++) {
+          const block = map[y][x];
+          if (BLOCKS[block].fluid) {
+            const options = [];
+            if (y + 1 < ROWS && map[y + 1][x] === "air") options.push([x, y + 1]);
+            else {
+              if (x > 0 && map[y][x - 1] === "air") options.push([x - 1, y]);
+              if (x < COLS - 1 && map[y][x + 1] === "air") options.push([x + 1, y]);
+            }
+            if (options.length) {
+              const [nx, ny] = options[Math.floor(Math.random() * options.length)];
+              map[ny][nx] = "water";
+              map[y][x] = "air";
+            }
+          }
+        }
       }
-    } else if(e.button === 2) { // 右键 放置
-      if(map[cy][cx] === "air" && inventory[selectedBlock] > 0) {
-        map[cy][cx] = selectedBlock;
-        inventory[selectedBlock]--;
-        saveGame();
-        refreshInventory();
-        draw();
+
+      // Player gravity
+      if (player.y + 1 < ROWS && !BLOCKS[map[player.y + 1][player.x]].solid) {
+        player.vy += 0.2;
+        player.y += player.vy;
+        if (player.y >= ROWS - 1) player.y = ROWS - 1;
+        player.y = Math.floor(player.y);
+      } else {
+        player.vy = 0;
       }
     }
-  });
 
-  // 禁用画布默认右键菜单
-  canvas.addEventListener("contextmenu", e => e.preventDefault());
+    function isWalkable(x, y) {
+      return x >= 0 && y >= 0 && x < COLS && y < ROWS && !BLOCKS[map[y][x]].solid;
+    }
 
-  // 初始化游戏
-  loadGame();
-  refreshInventory();
-  draw();
+    window.addEventListener("keydown", e => {
+      let nx = player.x, ny = player.y;
+      if (e.key === "ArrowLeft") nx--;
+      if (e.key === "ArrowRight") nx++;
+      if (e.key === "ArrowUp") ny--;
+      if (e.key === "ArrowDown") ny++;
+      if (isWalkable(nx, ny)) {
+        player.x = nx;
+        player.y = ny;
+      }
+    });
 
-})();
-</script>
+    canvas.addEventListener("mousedown", e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+      const y = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+      if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
+      if (e.button === 0) {
+        // 挖掘
+        map[y][x] = "air";
+      } else if (e.button === 2) {
+        // 放置
+        map[y][x] = ["dirt", "stone", "sand", "water"][Math.floor(Math.random() * 4)];
+      }
+    });
+    canvas.oncontextmenu = e => e.preventDefault();
 
+    function gameLoop() {
+      updatePhysics();
+      drawMap();
+      requestAnimationFrame(gameLoop);
+    }
+    gameLoop();
+  </script>
 </body>
 </html>
