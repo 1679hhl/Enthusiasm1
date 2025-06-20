@@ -2,48 +2,136 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>单机点击游戏</title>
+  <title>金币点击游戏</title>
   <style>
-    body { text-align: center; font-family: sans-serif; padding: 2em; }
-    #coin { font-size: 40px; cursor: pointer; margin: 20px; }
-    button { font-size: 16px; padding: 10px 20px; margin: 10px; }
+    body {
+      background: linear-gradient(to bottom, #f7e7a9, #f9c74f);
+      font-family: 'Arial Rounded MT', sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    #coin {
+      font-size: 80px;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      user-select: none;
+    }
+
+    #coin:active {
+      transform: scale(1.2) rotate(10deg);
+    }
+
+    #count {
+      font-size: 1.8em;
+      margin: 10px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 12px 24px;
+      margin: 20px;
+      border: none;
+      border-radius: 10px;
+      background-color: #ffaf40;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px #d98e00;
+    }
+
+    button:hover {
+      background-color: #ffc76f;
+    }
+
+    button:active {
+      box-shadow: 0 2px #b87500;
+      transform: translateY(2px);
+    }
+
+    .float-text {
+      position: absolute;
+      color: #fff;
+      font-weight: bold;
+      animation: float-up 0.8s ease-out forwards;
+      pointer-events: none;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    @keyframes float-up {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>点金币游戏</h1>
+
+  <h1>金币点击游戏</h1>
   <div id="coin">🪙</div>
   <p>金币数量：<span id="count">0</span></p>
-  <button id="upgrade">升级（成本：10金币）</button>
+  <p>每次点击获得：<span id="power">1</span> 金币</p>
+  <button id="upgrade">升级威力（成本：10金币）</button>
+
+  <audio id="clickSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_1096469e1a.mp3"></audio>
+  <audio id="upgradeSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_d2993b1c96.mp3"></audio>
 
   <script>
     let coins = parseInt(localStorage.getItem("coins") || "0");
     let power = parseInt(localStorage.getItem("power") || "1");
 
-    const countEl = document.getElementById("count");
     const coinEl = document.getElementById("coin");
+    const countEl = document.getElementById("count");
+    const powerEl = document.getElementById("power");
     const upgradeBtn = document.getElementById("upgrade");
+    const clickSound = document.getElementById("clickSound");
+    const upgradeSound = document.getElementById("upgradeSound");
 
     function updateUI() {
       countEl.textContent = coins;
+      powerEl.textContent = power;
       localStorage.setItem("coins", coins);
       localStorage.setItem("power", power);
     }
 
-    coinEl.onclick = () => {
-      coins += power;
-      updateUI();
-    };
+    function spawnFloatingText(x, y, text) {
+      const floatText = document.createElement("div");
+      floatText.className = "float-text";
+      floatText.style.left = x + "px";
+      floatText.style.top = y + "px";
+      floatText.textContent = `+${text}`;
+      document.body.appendChild(floatText);
+      setTimeout(() => floatText.remove(), 800);
+    }
 
-    upgradeBtn.onclick = () => {
+    coinEl.addEventListener("click", (e) => {
+      coins += power;
+      clickSound.currentTime = 0;
+      clickSound.play();
+      updateUI();
+      spawnFloatingText(e.pageX, e.pageY, power);
+    });
+
+    upgradeBtn.addEventListener("click", () => {
       if (coins >= 10) {
         coins -= 10;
         power += 1;
+        upgradeSound.play();
         updateUI();
-        alert("升级成功！现在每次点击获得 " + power + " 金币");
+        alert(`升级成功！你现在每次点击获得 ${power} 金币`);
       } else {
         alert("金币不足！");
       }
-    };
+    });
 
     updateUI();
   </script>
