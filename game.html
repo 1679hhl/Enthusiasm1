@@ -43,6 +43,37 @@
 
     let player = { x: 5, y: 5, vy: 0 };
 
+    let particles = [];
+
+    function addParticles(x, y, color) {
+      for (let i = 0; i < 6; i++) {
+        particles.push({
+          x: x * TILE_SIZE + TILE_SIZE / 2,
+          y: y * TILE_SIZE + TILE_SIZE / 2,
+          vx: (Math.random() - 0.5) * 2,
+          vy: (Math.random() - 1.5) * 2,
+          life: 30,
+          color
+        });
+      }
+    }
+
+    function updateParticles() {
+      particles = particles.filter(p => p.life-- > 0);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1;
+      }
+    }
+
+    function drawParticles() {
+      for (const p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 2, 2);
+      }
+    }
+
     function drawTile(x, y, type) {
       ctx.fillStyle = BLOCKS[type].color;
       ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
@@ -57,27 +88,28 @@
     }
 
     function drawMap() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (let y = 0; y < ROWS; y++) {
         for (let x = 0; x < COLS; x++) {
           drawTile(x, y, map[y][x]);
         }
       }
       drawPlayer();
+      drawParticles();
     }
 
     function updatePhysics() {
-      // Sand gravity
       for (let y = ROWS - 2; y >= 0; y--) {
         for (let x = 0; x < COLS; x++) {
           const block = map[y][x];
           if (BLOCKS[block].gravity && map[y + 1][x] === "air") {
             map[y + 1][x] = block;
             map[y][x] = "air";
+            addParticles(x, y, BLOCKS[block].color);
           }
         }
       }
 
-      // Fluid spread (water)
       for (let y = ROWS - 1; y >= 0; y--) {
         for (let x = 0; x < COLS; x++) {
           const block = map[y][x];
@@ -92,12 +124,12 @@
               const [nx, ny] = options[Math.floor(Math.random() * options.length)];
               map[ny][nx] = "water";
               map[y][x] = "air";
+              addParticles(x, y, BLOCKS[block].color);
             }
           }
         }
       }
 
-      // Player gravity
       if (player.y + 1 < ROWS && !BLOCKS[map[player.y + 1][player.x]].solid) {
         player.vy += 0.2;
         player.y += player.vy;
@@ -106,6 +138,8 @@
       } else {
         player.vy = 0;
       }
+
+      updateParticles();
     }
 
     function isWalkable(x, y) {
@@ -131,16 +165,18 @@
       if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
       if (e.button === 0) {
         map[y][x] = "air";
+        addParticles(x, y, "#ffffff");
       } else if (e.button === 2) {
-        map[y][x] = ["dirt", "stone", "sand", "water"][Math.floor(Math.random() * 4)];
+        const block = ["dirt", "stone", "sand", "water"][Math.floor(Math.random() * 4)];
+        map[y][x] = block;
+        addParticles(x, y, BLOCKS[block].color);
       }
     });
     canvas.oncontextmenu = e => e.preventDefault();
 
-    // 固定帧率更新物理逻辑
     setInterval(() => {
       updatePhysics();
-    }, 1000 / 15); // 每秒15次物理更新
+    }, 1000 / 15);
 
     function gameLoop() {
       drawMap();
