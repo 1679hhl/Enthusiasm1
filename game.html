@@ -2,136 +2,179 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>金币点击游戏</title>
+  <title>金币点击游戏 V2</title>
   <style>
     body {
-      background: linear-gradient(to bottom, #f7e7a9, #f9c74f);
-      font-family: 'Arial Rounded MT', sans-serif;
+      background: linear-gradient(to bottom right, #f8e6a0, #f7c159);
+      font-family: 'Segoe UI', sans-serif;
       text-align: center;
-      padding: 40px;
+      margin: 0;
+      padding: 40px 20px;
+      overflow-x: hidden;
     }
 
     h1 {
-      font-size: 2.5em;
+      font-size: 2.8em;
       margin-bottom: 10px;
+      color: #444;
+      text-shadow: 1px 1px 2px #fff;
     }
 
     #coin {
-      font-size: 80px;
+      font-size: 100px;
       cursor: pointer;
-      transition: transform 0.1s ease;
+      transition: transform 0.15s ease;
       user-select: none;
+      display: inline-block;
+      margin-top: 20px;
+    }
+
+    #coin:hover {
+      transform: scale(1.1);
     }
 
     #coin:active {
-      transform: scale(1.2) rotate(10deg);
+      transform: scale(1.3) rotate(8deg);
     }
 
-    #count {
-      font-size: 1.8em;
-      margin: 10px;
+    .info {
+      font-size: 1.4em;
+      margin: 15px 0;
+      color: #222;
     }
 
     button {
       font-size: 18px;
-      padding: 12px 24px;
-      margin: 20px;
+      padding: 14px 28px;
+      margin-top: 25px;
       border: none;
-      border-radius: 10px;
-      background-color: #ffaf40;
+      border-radius: 14px;
+      background: linear-gradient(to right, #ff9500, #ffb347);
       color: white;
+      font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 4px #d98e00;
+      box-shadow: 0 6px #c97b00;
+      transition: all 0.15s ease;
     }
 
     button:hover {
-      background-color: #ffc76f;
+      background: linear-gradient(to right, #ffa600, #ffc66d);
     }
 
     button:active {
-      box-shadow: 0 2px #b87500;
       transform: translateY(2px);
+      box-shadow: 0 3px #a66700;
     }
 
     .float-text {
       position: absolute;
-      color: #fff;
+      color: gold;
+      font-size: 20px;
       font-weight: bold;
       animation: float-up 0.8s ease-out forwards;
       pointer-events: none;
-      text-shadow: 1px 1px 3px #000;
+      text-shadow: 1px 1px 4px #000;
     }
 
     @keyframes float-up {
       from {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
       to {
         opacity: 0;
-        transform: translateY(-50px);
+        transform: translateY(-60px) scale(1.5);
       }
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #666;
     }
   </style>
 </head>
 <body>
 
-  <h1>金币点击游戏</h1>
+  <h1>💰 点金币游戏 V2</h1>
   <div id="coin">🪙</div>
-  <p>金币数量：<span id="count">0</span></p>
-  <p>每次点击获得：<span id="power">1</span> 金币</p>
-  <button id="upgrade">升级威力（成本：10金币）</button>
+  <p class="info">金币数量：<span id="count">0</span></p>
+  <p class="info">每次点击获得：<span id="power">1</span> 金币</p>
+  <p class="info">挂机产出：每秒 <span id="auto">0</span> 金币</p>
+  <button id="upgrade">升级威力（10金币）</button>
 
   <audio id="clickSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_1096469e1a.mp3"></audio>
   <audio id="upgradeSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_d2993b1c96.mp3"></audio>
 
+  <footer>本地存档自动保存，离线也能玩！</footer>
+
   <script>
+    // 读取存档
     let coins = parseInt(localStorage.getItem("coins") || "0");
     let power = parseInt(localStorage.getItem("power") || "1");
+    let autoRate = parseInt(localStorage.getItem("autoRate") || "0");
 
     const coinEl = document.getElementById("coin");
     const countEl = document.getElementById("count");
     const powerEl = document.getElementById("power");
+    const autoEl = document.getElementById("auto");
     const upgradeBtn = document.getElementById("upgrade");
     const clickSound = document.getElementById("clickSound");
     const upgradeSound = document.getElementById("upgradeSound");
 
+    // 更新界面和存档
     function updateUI() {
       countEl.textContent = coins;
       powerEl.textContent = power;
+      autoEl.textContent = autoRate;
       localStorage.setItem("coins", coins);
       localStorage.setItem("power", power);
+      localStorage.setItem("autoRate", autoRate);
+      upgradeBtn.textContent = `升级威力（${10 * power}金币）`;
     }
 
-    function spawnFloatingText(x, y, text) {
-      const floatText = document.createElement("div");
-      floatText.className = "float-text";
-      floatText.style.left = x + "px";
-      floatText.style.top = y + "px";
-      floatText.textContent = `+${text}`;
-      document.body.appendChild(floatText);
-      setTimeout(() => floatText.remove(), 800);
-    }
-
+    // 点击金币事件
     coinEl.addEventListener("click", (e) => {
       coins += power;
       clickSound.currentTime = 0;
       clickSound.play();
       updateUI();
-      spawnFloatingText(e.pageX, e.pageY, power);
+      spawnFloatingText(e.pageX, e.pageY, `+${power}`);
     });
 
+    // 升级点击威力
     upgradeBtn.addEventListener("click", () => {
-      if (coins >= 10) {
-        coins -= 10;
+      const cost = 10 * power;
+      if (coins >= cost) {
+        coins -= cost;
         power += 1;
+        if (power % 5 === 0) autoRate += 1; // 每5级解锁挂机
         upgradeSound.play();
         updateUI();
-        alert(`升级成功！你现在每次点击获得 ${power} 金币`);
+        alert(`升级成功！现在每次点击获得 ${power} 金币`);
       } else {
         alert("金币不足！");
       }
     });
+
+    // 漂浮数字
+    function spawnFloatingText(x, y, text) {
+      const float = document.createElement("div");
+      float.className = "float-text";
+      float.style.left = x + "px";
+      float.style.top = y + "px";
+      float.textContent = text;
+      document.body.appendChild(float);
+      setTimeout(() => float.remove(), 800);
+    }
+
+    // 挂机金币产出
+    setInterval(() => {
+      if (autoRate > 0) {
+        coins += autoRate;
+        updateUI();
+      }
+    }, 1000);
 
     updateUI();
   </script>
