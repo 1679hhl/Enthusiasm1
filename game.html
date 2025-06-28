@@ -1,27 +1,35 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>跳转到腾讯地图</title>
-  <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
-</head>
-<body>
-  <!-- 微信跳转小程序按钮 -->
-  <wx-open-launch-weapp
-    id="launch-btn"
-    username="gh_1d2bf5e27e69"  <!-- 这是腾讯地图的原始ID -->
-    path=""                    <!-- 可选跳转路径 -->
-  >
-    <script type="text/wxtag-template">
-      <button style="padding: 10px 20px; font-size: 16px;">打开腾讯地图小程序</button>
+<html lang="en">
+  <head>
+    <!-- ... -->
+    <script src="https://unpkg.com/@grapesjs/studio-sdk/dist/index.umd.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/@grapesjs/studio-sdk/dist/style.css"/>
+  </head>
+  <body>
+    <div id="studio-editor" style="height: 100dvh"></div>
+    <script>
+      GrapesJsStudioSDK.createStudioEditor({
+        root: '#studio-editor',
+        licenseKey: 'DEMO_LOCALHOST_KEY',
+        project: {
+          type: 'web',
+          // TODO: replace with a unique id for your projects. e.g. an uuid
+          id: 'UNIQUE_PROJECT_ID'
+        },
+        identity: {
+          // TODO: replace with a unique id for your end users. e.g. an uuid
+          id: 'UNIQUE_END_USER_ID'
+        },
+        assets: {
+          storageType: 'cloud'
+        },
+        storage: {
+          type: 'cloud',
+          autosaveChanges: 100,
+          autosaveIntervalMs: 10000
+        }
+      });
     </script>
-  </wx-open-launch-weapp>
-
-  <!-- 微信标签初始化脚本 -->
-  <script>
-    document.addEventListener('WeixinOpenTagsReady', function () {
-      // 可在此处添加事件监听
-    });
-  </script>
-</body>
-</html>
+  </body>
+<html>
