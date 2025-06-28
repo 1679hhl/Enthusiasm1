@@ -1,26 +1,111 @@
-
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Marketplace - AI Startup</title><link rel="modulepreload" href="/assets/manifest-5a16c4ce.js"/><link rel="modulepreload" href="/assets/entry.client-CpG2DL5j.js"/><link rel="modulepreload" href="/assets/index-CZ4uC1dO.js"/><link rel="modulepreload" href="/assets/index-CEHfgrAz.js"/><link rel="modulepreload" href="/assets/components-CK1BfWdx.js"/><link rel="modulepreload" href="/assets/feature-C2INU_a5.js"/><link rel="modulepreload" href="/assets/root-C5DHJe9d.js"/><link rel="modulepreload" href="/assets/error-boundary-BIS72QtX.js"/><link rel="modulepreload" href="/assets/tiny-invariant-CopsF_GD.js"/><link rel="modulepreload" href="/assets/csrf.client-ObEIYQRT.js"/><link rel="modulepreload" href="/assets/scroll-restoration-l1EP57Ks.js"/><link rel="modulepreload" href="/assets/_ui-D_qMYPaS.js"/><link rel="modulepreload" href="/assets/_ui.(builder)-CtiyHPuq.js"/><link rel="stylesheet" href="/assets/index-qR_Rm1eP.css"/><link rel="stylesheet" href="/assets/index-tqPHQB1o.css"/><link rel="stylesheet" href="/assets/index-DgVgRTzx.css"/><link rel="stylesheet" href="/assets/app-BHGKRf1y.css"/><link rel="stylesheet" href="/assets/builder-X6H-VRxz.css"/></head><body><script>((STORAGE_KEY, restoreKey) => {
-    if (!window.history.state || !window.history.state.key) {
-      let key = Math.random().toString(32).slice(2);
-      window.history.replaceState({
-        key
-      }, "");
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>悠然农家乐</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", sans-serif;
+      margin: 0;
+      background-color: #f9f7f3;
+      color: #333;
     }
-    try {
-      let positions = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
-      let storedY = positions[restoreKey || window.history.state.key];
-      if (typeof storedY === "number") {
-        window.scrollTo(0, storedY);
-      }
-    } catch (error) {
-      console.error(error);
-      sessionStorage.removeItem(STORAGE_KEY);
+    header {
+      background-image: url('https://images.unsplash.com/photo-1608551078718-e865b04cc99c');
+      background-size: cover;
+      background-position: center;
+      height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      text-align: center;
     }
-  })("positions", null)</script><script>window.__remixContext = {"basename":"/","future":{"v3_fetcherPersist":false,"v3_relativeSplatPath":false,"v3_throwAbortReason":false,"v3_routeConfig":false,"v3_singleFetch":false,"v3_lazyRouteDiscovery":false,"unstable_optimizeDeps":false},"isSpaMode":false,"state":{"loaderData":{"root":{"features":"filters,cms,xmlElement,staticExport,contentEditableMode,command,headSlotComponent,stylePanelAdvancedMode,animation,videoAnimation"},"routes/_ui":{"csrfToken":"90L0aDK8mjdj9ZAAx7RZag"},"routes/_ui.(builder)":{"project":{"id":"0e9ff31f-e3ba-40d2-9e12-20af8ceeac43","title":"Marketplace - AI Startup","domain":"marketplace-ai-startup-loodq","userId":"a3f4bf75-1548-47f0-bb4d-ee89f8690daf","isDeleted":false,"createdAt":"2025-06-28T11:47:24.572+00:00","previewImageAssetId":"71c5a7bd71718d94e26ce9b4424190e7fc327e25faeb6522d36122c45a6a991c","marketplaceApprovalStatus":"UNLISTED","previewImageAsset":{"id":"71c5a7bd71718d94e26ce9b4424190e7fc327e25faeb6522d36122c45a6a991c","projectId":"0e9ff31f-e3ba-40d2-9e12-20af8ceeac43","name":"ascend-cover_aPSGjSz0r-u7Gec3vty3n.png"},"latestBuildVirtual":null,"domainsVirtual":[],"latestStaticBuild":null},"publisherHost":"wstd.io","build":{"id":"715a80e5-8224-4dba-bb1b-8341bed3f915","version":0},"authTokenPermissions":{"canClone":true,"canCopy":true,"canPublish":true},"authPermit":"own","userPlanFeatures":{"allowShareAdminLinks":false,"allowDynamicData":false,"maxContactEmails":0,"maxDomainsAllowedPerUser":1,"maxPublishesAllowedPerUser":10,"hasSubscription":false,"hasProPlan":false}}},"actionData":null,"errors":null}};</script><script type="module" async="">import "/assets/manifest-5a16c4ce.js";
-import * as route0 from "/assets/root-C5DHJe9d.js";
-import * as route1 from "/assets/_ui-D_qMYPaS.js";
-import * as route2 from "/assets/_ui.(builder)-CtiyHPuq.js";
+    header h1 {
+      font-size: 3rem;
+      margin: 0;
+    }
+    nav {
+      background-color: #5c9e4f;
+      padding: 10px 0;
+      text-align: center;
+    }
+    nav a {
+      color: white;
+      margin: 0 15px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    section {
+      padding: 40px 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: #5c9e4f;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .gallery img {
+      width: 100%;
+      border-radius: 10px;
+    }
+    footer {
+      background-color: #eee;
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
 
-window.__remixRouteModules = {"root":route0,"routes/_ui":route1,"routes/_ui.(builder)":route2};
+  <header>
+    <h1>悠然农家乐</h1>
+  </header>
 
-import("/assets/entry.client-CpG2DL5j.js");</script></body></html>
+  <nav>
+    <a href="#">首页</a>
+    <a href="#">关于我们</a>
+    <a href="#">特色菜品</a>
+    <a href="#">客房预订</a>
+    <a href="#">联系我们</a>
+  </nav>
+
+  <section>
+    <h2 class="section-title">关于我们</h2>
+    <p>悠然农家乐位于青山绿水之间，为您提供生态餐饮、农家住宿和亲子体验。我们坚持有机种植、绿色健康，欢迎您来享受慢生活。</p>
+  </section>
+
+  <section>
+    <h2 class="section-title">环境展示</h2>
+    <div class="gallery">
+      <img src="https://images.unsplash.com/photo-1598514982902-34f7e33b8bb3" alt="农家小院">
+      <img src="https://images.unsplash.com/photo-1584515933487-779824d29309" alt="绿色菜园">
+      <img src="https://images.unsplash.com/photo-1611414904085-d5ee23b3a305" alt="田园风光">
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">联系我们</h2>
+    <p>地址：浙江省·山清水秀村·桃花源路88号<br/>
+       电话：123-4567-8901<br/>
+       微信：younongjia88</p>
+  </section>
+
+  <footer>
+    © 2025 悠然农家乐 | 保留所有权利
+  </footer>
+
+</body>
+</html>
