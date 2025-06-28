@@ -1,205 +1,27 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>生动沙盒小游戏</title>
-  <style>
-    body {
-      margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; color: #fff;
-      font-family: sans-serif;
-    }
-    canvas {
-      border: 2px solid #fff;
-      image-rendering: pixelated;
-      background: #88cc88;
-    }
-    #tip { margin: 10px; font-size: 0.9em; text-align: center; }
-  </style>
+  <title>跳转到腾讯地图</title>
+  <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
 </head>
 <body>
-  <h1>🌍 沙盒物理游戏</h1>
-  <canvas id="game" width="640" height="480"></canvas>
-  <div id="tip">←↑→↓移动 | 鼠标点击互动 | 沙子/水/重力/动物 | 每秒固定更新物理</div>
+  <!-- 微信跳转小程序按钮 -->
+  <wx-open-launch-weapp
+    id="launch-btn"
+    username="gh_1d2bf5e27e69"  <!-- 这是腾讯地图的原始ID -->
+    path=""                    <!-- 可选跳转路径 -->
+  >
+    <script type="text/wxtag-template">
+      <button style="padding: 10px 20px; font-size: 16px;">打开腾讯地图小程序</button>
+    </script>
+  </wx-open-launch-weapp>
 
+  <!-- 微信标签初始化脚本 -->
   <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-
-    const TILE_SIZE = 32;
-    const ROWS = 15;
-    const COLS = 20;
-
-    const BLOCKS = {
-      air:   { color: "#88cc88", solid: false, gravity: false, fluid: false },
-      dirt:  { color: "#8B4513", solid: true, gravity: false, fluid: false },
-      stone: { color: "#555", solid: true, gravity: false, fluid: false },
-      sand:  { color: "#f4d03f", solid: true, gravity: true, fluid: false },
-      water: { color: "#4fc3f7", solid: false, gravity: false, fluid: true },
-      lava:  { color: "#ff5722", solid: false, gravity: false, fluid: true },
-      grass: { color: "#00aa00", solid: true, gravity: false, fluid: false },
-      ice:   { color: "#a0e8f0", solid: true, gravity: false, fluid: false }
-    };
-
-    const map = Array.from({ length: ROWS }, (_, y) =>
-      Array.from({ length: COLS }, (_, x) => (y > 11 ? "dirt" : y === 11 ? "grass" : "air"))
-    );
-
-    let player = { x: 5, y: 5, vy: 0 };
-    let animals = [{ x: 10, y: 10, type: "🐑", dir: 1 }];
-    let particles = [];
-
-    function addParticles(x, y, color) {
-      for (let i = 0; i < 6; i++) {
-        particles.push({
-          x: x * TILE_SIZE + TILE_SIZE / 2,
-          y: y * TILE_SIZE + TILE_SIZE / 2,
-          vx: (Math.random() - 0.5) * 2,
-          vy: (Math.random() - 1.5) * 2,
-          life: 30,
-          color
-        });
-      }
-    }
-
-    function updateParticles() {
-      particles = particles.filter(p => p.life-- > 0);
-      for (const p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.1;
-      }
-    }
-
-    function drawParticles() {
-      for (const p of particles) {
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 2, 2);
-      }
-    }
-
-    function drawTile(x, y, type) {
-      ctx.fillStyle = BLOCKS[type].color;
-      ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-    }
-
-    function drawPlayer() {
-      ctx.fillStyle = "#007700";
-      ctx.fillRect(player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      ctx.fillStyle = "#ccffcc";
-      ctx.fillRect(player.x * TILE_SIZE + 8, player.y * TILE_SIZE + 8, 6, 6);
-      ctx.fillRect(player.x * TILE_SIZE + 18, player.y * TILE_SIZE + 8, 6, 6);
-    }
-
-    function drawAnimals() {
-      for (const a of animals) {
-        ctx.font = "24px sans-serif";
-        ctx.fillText(a.type, a.x * TILE_SIZE + 4, a.y * TILE_SIZE + 28);
-      }
-    }
-
-    function drawMap() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let y = 0; y < ROWS; y++) {
-        for (let x = 0; x < COLS; x++) {
-          drawTile(x, y, map[y][x]);
-        }
-      }
-      drawPlayer();
-      drawAnimals();
-      drawParticles();
-    }
-
-    function updatePhysics() {
-      for (let y = ROWS - 2; y >= 0; y--) {
-        for (let x = 0; x < COLS; x++) {
-          const block = map[y][x];
-          if (BLOCKS[block].gravity && map[y + 1][x] === "air") {
-            map[y + 1][x] = block;
-            map[y][x] = "air";
-            addParticles(x, y, BLOCKS[block].color);
-          }
-        }
-      }
-
-      for (let y = ROWS - 1; y >= 0; y--) {
-        for (let x = 0; x < COLS; x++) {
-          const block = map[y][x];
-          if (BLOCKS[block].fluid) {
-            const options = [];
-            if (y + 1 < ROWS && map[y + 1][x] === "air") options.push([x, y + 1]);
-            else {
-              if (x > 0 && map[y][x - 1] === "air") options.push([x - 1, y]);
-              if (x < COLS - 1 && map[y][x + 1] === "air") options.push([x + 1, y]);
-            }
-            if (options.length) {
-              const [nx, ny] = options[Math.floor(Math.random() * options.length)];
-              map[ny][nx] = block;
-              map[y][x] = "air";
-              addParticles(x, y, BLOCKS[block].color);
-            }
-          }
-        }
-      }
-
-      for (const a of animals) {
-        let nx = a.x + a.dir;
-        if (nx < 0 || nx >= COLS || BLOCKS[map[a.y][nx]].solid) a.dir *= -1;
-        else a.x += a.dir;
-      }
-
-      if (player.y + 1 < ROWS && !BLOCKS[map[player.y + 1][player.x]].solid) {
-        player.vy += 0.2;
-        player.y += player.vy;
-        if (player.y >= ROWS - 1) player.y = ROWS - 1;
-        player.y = Math.floor(player.y);
-      } else {
-        player.vy = 0;
-      }
-
-      updateParticles();
-    }
-
-    function isWalkable(x, y) {
-      return x >= 0 && y >= 0 && x < COLS && y < ROWS && !BLOCKS[map[y][x]].solid;
-    }
-
-    window.addEventListener("keydown", e => {
-      let nx = player.x, ny = player.y;
-      if (e.key === "ArrowLeft") nx--;
-      if (e.key === "ArrowRight") nx++;
-      if (e.key === "ArrowUp") ny--;
-      if (e.key === "ArrowDown") ny++;
-      if (isWalkable(nx, ny)) {
-        player.x = nx;
-        player.y = ny;
-      }
+    document.addEventListener('WeixinOpenTagsReady', function () {
+      // 可在此处添加事件监听
     });
-
-    canvas.addEventListener("mousedown", e => {
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.floor((e.clientX - rect.left) / TILE_SIZE);
-      const y = Math.floor((e.clientY - rect.top) / TILE_SIZE);
-      if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
-      if (e.button === 0) {
-        map[y][x] = "air";
-        addParticles(x, y, "#ffffff");
-      } else if (e.button === 2) {
-        const block = ["dirt", "stone", "sand", "water", "lava", "ice"][Math.floor(Math.random() * 6)];
-        map[y][x] = block;
-        addParticles(x, y, BLOCKS[block].color);
-      }
-    });
-    canvas.oncontextmenu = e => e.preventDefault();
-
-    setInterval(() => {
-      updatePhysics();
-    }, 1000 / 15);
-
-    function gameLoop() {
-      drawMap();
-      requestAnimationFrame(gameLoop);
-    }
-    gameLoop();
   </script>
 </body>
 </html>
